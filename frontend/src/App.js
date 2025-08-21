@@ -8,6 +8,7 @@ import PrzedmiotyChart from './PrzedmiotyChart';
 import RocznyWykres from './RocznyWykres';
 import KompetencjeChart from './KompetencjeChart';
 import { ShieldAlert } from 'lucide-react';
+import SpermAnimation from './SpermAnimation'; // Import nowego komponentu
 
 const formatDate = (date) => {
     const d = new Date(date);
@@ -27,7 +28,7 @@ function App() {
             endDate: today,
         };
     };
-
+    const [showAnimation, setShowAnimation] = useState(false);
     const [startDate, setStartDate] = useState(getInitialDates().startDate);
     const [endDate, setEndDate] = useState(getInitialDates().endDate);
     const [allDzialy, setAllDzialy] = useState([]);
@@ -130,8 +131,17 @@ function App() {
         <div className="App">
             <header className="App-header">
                 <div className="header-section">
-                    <h1 className="main-header">BOKser_web</h1>
+                    <button 
+                    className="main-header" 
+                    onClick={() => setShowAnimation(!showAnimation)}
+                    >
+                    BOKser_web
+                    </button>
+                    {showAnimation && <SpermAnimation />} {/* <-- LINIĘ WKLEJAMY TUTAJ */}
                 </div>
+    <div className="main-content">
+      {/* ...reszta aplikacji... */}
+    </div>
             </header>
 
             <div className="filters-panel">

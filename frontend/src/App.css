@@ -536,17 +536,31 @@
 }
 /* 1. Kontener nagłówka - teraz będzie tłem na całą szerokość */
 .header-section {
-  background-color: #f0f0f0;  /* Jasnoszare tło */
-  padding: 20px 30px;         /* Odstęp wewnątrz (20px góra/dół, 30px lewo/prawo) */
-  text-align: left;           /* Wymuszenie wyrównania do lewej */
+  background-color: #f0f0f0;
+  padding: 20px 30px;
+  text-align: left;
+  position: relative; /* <-- KLUCZOWE: Ustawia kontekst dla pozycjonowania płótna */
 }
 
-/* 2. Pole z napisem "BOKser_web" */
 .main-header {
-  display: inline-block;        /* Tło dopasuje się do szerokości tekstu */
-  background-color: #282c34;  /* Ciemne tło dla samego napisu */
-  color: white;                 /* Biały kolor tekstu */
-  padding: 10px 20px;         /* Wewnętrzny odstęp w ciemnym polu */
-  border-radius: 8px;           /* Zaokrąglone rogi */
-  margin: 0;                    /* Reset marginesu */
+  display: inline-block;
+  background-color: #282c34;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  margin: 0;
+  border: none;
+  font-size: 1.5em;
+  cursor: pointer;
+  font-family: inherit;
+  position: relative;   /* <-- Dodane, aby z-index działał */
+  z-index: 2;           /* <-- Ustawia przycisk NAD animacją */
+}
+#spermCanvas {
+  position: absolute;   /* Pozycjonuje płótno wewnątrz .header-section */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;           /* Ustawia płótno POD przyciskiem */
 }
