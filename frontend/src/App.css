@@ -5,9 +5,14 @@
 
 /* Nagłówek */
 .App-header {
-  background-color: #f0f0f0;
-  padding: 20px;
-  color: white;
+  background-color: #f0f0f0;  /* Nasze szare tło */
+  color: black;               /* Ustawiamy czarny kolor czcionki dla tej sekcji */
+  text-align: left;
+  position: relative;
+  min-height: 100px;           /* Minimalna wysokość, którą możesz regulować */
+  display: flex;
+  align-items: center;
+  padding: 0 30px;            /* Odstępy tylko po bokach */
 }
 
 /* Panel z filtrami */
@@ -170,6 +175,8 @@
 /* GŁÓWNA ZAWARTOŚĆ */
 .main-content {
   padding: 20px;
+  max-width: 1600px; /* Ogranicza maksymalną szerokość */
+  margin: 10px auto; /* Centruje i dodaje 20px marginesu w pionie */
 }
 
 .tab-content {
@@ -537,9 +544,14 @@
 /* 1. Kontener nagłówka - teraz będzie tłem na całą szerokość */
 .header-section {
   background-color: #f0f0f0;
-  padding: 20px 30px;
   text-align: left;
-  position: relative; /* <-- KLUCZOWE: Ustawia kontekst dla pozycjonowania płótna */
+  position: relative;
+
+  /* NOWE STYLE KONTROLUJĄCE WYSOKOŚĆ I WYRÓWNANIE */
+  min-height: 70px;      /* Ustawia minimalną wysokość nagłówka */
+  display: flex;         /* Włącza tryb Flexbox */
+  align-items: center;   /* Centruje elementy (przycisk) w pionie */
+  padding: 0 30px;       /* Usuwa padding góra/dół, zostawia boczny */
 }
 
 .main-header {

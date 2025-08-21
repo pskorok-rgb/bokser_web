@@ -130,20 +130,15 @@ function App() {
     return (
         <div className="App">
             <header className="App-header">
-                <div className="header-section">
-                    <button 
+                <button 
                     className="main-header" 
                     onClick={() => setShowAnimation(!showAnimation)}
-                    >
-                    BOKser_web
-                    </button>
-                    {showAnimation && <SpermAnimation />} {/* <-- LINIĘ WKLEJAMY TUTAJ */}
-                </div>
-    <div className="main-content">
-      {/* ...reszta aplikacji... */}
-    </div>
-            </header>
-
+                >
+                BOKser_web
+                </button>
+                {showAnimation && <SpermAnimation />}
+                </header>
+            
             <div className="filters-panel">
                 <div className="filter-row-main">
                     <div className="filter-group">
