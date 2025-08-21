@@ -129,7 +129,9 @@ function App() {
     return (
         <div className="App">
             <header className="App-header">
-                <h1 className="main-header">BOKser_web</h1>
+                <div className="header-section">
+                    <h1 className="main-header">BOKser_web</h1>
+                </div>
             </header>
 
             <div className="filters-panel">

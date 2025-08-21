@@ -534,8 +534,19 @@
 .back-button:hover {
   background-color: #e0e0e0;
 }
-/* Styl dla głównego nagłówka-banera */
+/* 1. Kontener nagłówka - teraz będzie tłem na całą szerokość */
+.header-section {
+  background-color: #f0f0f0;  /* Jasnoszare tło */
+  padding: 20px 30px;         /* Odstęp wewnątrz (20px góra/dół, 30px lewo/prawo) */
+  text-align: left;           /* Wymuszenie wyrównania do lewej */
+}
+
+/* 2. Pole z napisem "BOKser_web" */
 .main-header {
-  text-align: left;
-  padding-left: 30px; /* Możesz dostosować tę wartość */
+  display: inline-block;        /* Tło dopasuje się do szerokości tekstu */
+  background-color: #282c34;  /* Ciemne tło dla samego napisu */
+  color: white;                 /* Biały kolor tekstu */
+  padding: 10px 20px;         /* Wewnętrzny odstęp w ciemnym polu */
+  border-radius: 8px;           /* Zaokrąglone rogi */
+  margin: 0;                    /* Reset marginesu */
 }
