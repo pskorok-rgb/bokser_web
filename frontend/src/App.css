@@ -534,3 +534,8 @@
 .back-button:hover {
   background-color: #e0e0e0;
 }
+/* Styl dla głównego nagłówka-banera */
+.main-header {
+  text-align: left;
+  padding-left: 30px; /* Możesz dostosować tę wartość */
+}
