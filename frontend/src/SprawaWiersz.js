@@ -133,7 +133,7 @@ function SprawaWiersz({ sprawa, onContractorClick }) {
                         title="Pokaż szczegóły kontrahenta"
                         onClick={(e) => {
                         e.stopPropagation();
-                        onContractorClick(sprawa.nazwa_kontrahenta);
+                        onContractorClick(sprawa.kontrahent_akronim);
                         }} 
                     />
                     <span>{sprawa.nazwa_kontrahenta}</span>

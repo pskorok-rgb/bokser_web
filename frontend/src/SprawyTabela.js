@@ -18,18 +18,20 @@ function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearc
     const [selectedContractor, setSelectedContractor] = useState(null);
     const [isLoadingModal, setIsLoadingModal] = useState(false);
 
-    const handleContractorIconClick = (nazwaKontrahenta) => {
-  if (!nazwaKontrahenta) {
-    console.error("Brak nazwy kontrahenta!");
+    const handleContractorIconClick = (akronim) => {
+  if (!akronim) {
+    console.error("Brak akronimu kontrahenta!");
+    // Opcjonalnie: Pokaż użytkownikowi błąd
+    // alert("Brak akronimu, nie można pobrać danych.");
     return;
   }
-
+  
   setIsModalOpen(true);
   setIsLoadingModal(true);
   setSelectedContractor(null);
 
-  // ZMIANA TUTAJ: Używamy nowego endpointu i enkodujemy nazwę na potrzeby URL
-  axios.get(`http://localhost:5001/api/kontrahenci/by-name/${encodeURIComponent(nazwaKontrahenta)}`)
+  // ZMIANA TUTAJ: Używamy nowego endpointu z akronimem
+  axios.get(`http://localhost:5001/api/kontrahenci/${akronim}`)
     .then(response => {
       setSelectedContractor(response.data);
     })
