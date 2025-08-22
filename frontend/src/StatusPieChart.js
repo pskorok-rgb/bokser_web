@@ -90,7 +90,7 @@ function StatusPieChart({ startDate, endDate, dzialy }) {
     if (chartData.datasets[0].data.length === 0) return <p>Brak danych dla wybranych filtrów.</p>;
 
     return (
-        <div style={{ height: '300px' }}>
+        <div style={{ height: '550px' }}>
             <Doughnut data={chartData} options={options} />
         </div>
     );

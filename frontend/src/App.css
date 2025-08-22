@@ -151,26 +151,6 @@
   padding: 0 20px;
 }
 
-.tabs-buttons {
-    display: flex;
-}
-
-.tab-button {
-  padding: 12px 20px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 1.1em;
-  color: #495057;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -1px;
-}
-
-.tab-button.active {
-  color: #007bff;
-  font-weight: bold;
-  border-bottom: 3px solid #007bff;
-}
 
 /* GŁÓWNA ZAWARTOŚĆ */
 .main-content {
@@ -575,4 +555,30 @@
   width: 100%;
   height: 100%;
   z-index: 1;           /* Ustawia płótno POD przyciskiem */
+}
+/* Kontener na zakładki */
+/* ---- OSTATECZNE, POPRAWNE STYLE DLA IKONEK ZAKŁADEK ---- */
+
+/* Ustawia ikonki zakładek obok siebie */
+.div-tabs-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* Ogólny styl dla ikonek (DIV) */
+.div-tabs-buttons div {
+  padding: 10px;
+  cursor: pointer;
+  color: #a0a0a0; /* Domyślny, szary kolor */
+  transition: color 0.2s;
+}
+
+/* Styl po najechaniu myszką */
+.div-tabs-buttons div:hover {
+  color: #333;
+}
+
+/* Styl dla aktywnej, niebieskiej ikonki */
+.div-tabs-buttons div.active {
+  color: #007bff; /* <-- TA REGUŁA ODPOWIADA ZA NIEBIESKI KOLOR */
 }

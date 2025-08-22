@@ -8,7 +8,9 @@ import PrzedmiotyChart from './PrzedmiotyChart';
 import RocznyWykres from './RocznyWykres';
 import KompetencjeChart from './KompetencjeChart';
 import { ShieldAlert } from 'lucide-react';
-import SpermAnimation from './SpermAnimation'; // Import nowego komponentu
+import SpermAnimation from './SpermAnimation';
+import { ListTodo, BarChart4 } from 'lucide-react';
+
 
 const formatDate = (date) => {
     const d = new Date(date);
@@ -192,20 +194,22 @@ function App() {
             </div>
 
             <div className="tabs-container">
-                <div className="tabs-buttons">
-                    <button 
-                        className={`tab-button ${activeTab === 'sprawy' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('sprawy')}
-                    >
-                        Sprawy
-                    </button>
-                    <button 
-                        className={`tab-button ${activeTab === 'wykresy' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('wykresy')}
-                    >
-                        Wykresy
-                    </button>
-                </div>
+                <div className="div-tabs-buttons">
+  <div // <-- ZMIANA Z BUTTON NA DIV
+    className={activeTab === 'sprawy' ? 'active' : ''} 
+    onClick={() => setActiveTab('sprawy')}
+    title="Sprawy"
+  >
+    <ListTodo size={20} />
+  </div>
+  <div // <-- ZMIANA Z BUTTON NA DIV
+    className={activeTab === 'wykresy' ? 'active' : ''} 
+    onClick={() => setActiveTab('wykresy')}
+    title="Wykresy"
+  >
+    <BarChart4 size={20} />
+  </div>
+</div>
                 <div className={`overdue-box ${przedawnioneCount > 0 ? 'active' : ''}`}>
                     <span>Przedawnione</span>
                     <span className="overdue-count">{przedawnioneCount}</span>
@@ -234,31 +238,45 @@ function App() {
                     </div>
                 )}
                 {activeTab === 'wykresy' && (
-                    <div className="tab-content charts-view-container">
-                        <div className="chart-selector-wrapper">
-                            <label htmlFor="chart-select">Wybierz wykres:</label>
-                            <select 
-                                id="chart-select" 
-                                value={selectedChart} 
-                                onChange={(e) => setSelectedChart(e.target.value)}
-                            >
-                                <option value="status">Nowe sprawy (wg statusu)</option>
-                                <option value="workload">Liczba zamkniętych zadań</option>
-                                <option value="subjects">TOP 10 Przedmiotów Zadań</option>
-                                <option value="yearly">Przegląd roczny (wg przedmiotów)</option>
-                                <option value="competencies">Kompetencje serwisantów</option>
-                            </select>
-                        </div>
-                        
-                        <div className="chart-card">
-                            {selectedChart === 'status' && <StatusPieChart startDate={startDate} endDate={endDate} dzialy={selectedDzialy} />}
-                            {selectedChart === 'workload' && <WorkloadChart startDate={startDate} endDate={endDate} dzialy={selectedDzialy} />}
-                            {selectedChart === 'subjects' && <PrzedmiotyChart startDate={startDate} endDate={endDate} dzialy={selectedDzialy} />}
-                            {selectedChart === 'yearly' && <RocznyWykres dzialy={selectedDzialy} />}
-                            {selectedChart === 'competencies' && <KompetencjeChart startDate={startDate} endDate={endDate} dzialy={selectedDzialy} />}
-                        </div>
-                    </div>
-                )}
+  <div className="charts-page-container">
+
+    {/* --- KONTENER Z LISTĄ ROZWIJANĄ --- */}
+    <div className="chart-selector-wrapper">
+      <label htmlFor="chart-select">Wybierz wykres:</label>
+      <select 
+        id="chart-select"
+        value={selectedChart} 
+        onChange={(e) => setSelectedChart(e.target.value)}
+      >
+        <option value="status">Wykres Statusów (Kołowy)</option>
+        <option value="kompetencje">Wykres Kompetencji</option>
+        <option value="przedmioty">Wykres Przedmiotów</option>
+        <option value="roczny">Wykres Roczny</option>
+        <option value="workload">Obciążenie Pracą</option>
+      </select>
+    </div>
+
+    {/* --- KONTENER Z WYKRESEM --- */}
+    <div className="chart-display-area">
+      {selectedChart === 'status' && <StatusPieChart startDate={startDate} 
+      endDate={endDate} 
+      dzialy={selectedDzialy}/>}
+      {selectedChart === 'kompetencje' && <KompetencjeChart startDate={startDate} 
+      endDate={endDate} 
+      dzialy={selectedDzialy}/>}
+      {selectedChart === 'przedmioty' && <PrzedmiotyChart startDate={startDate} 
+      endDate={endDate} 
+      dzialy={selectedDzialy}/>}
+      {selectedChart === 'roczny' && <RocznyWykres startDate={startDate} 
+      endDate={endDate} 
+      dzialy={selectedDzialy}/>}
+      {selectedChart === 'workload' && <WorkloadChart startDate={startDate} 
+      endDate={endDate} 
+      dzialy={selectedDzialy}/>}
+    </div>
+
+  </div>
+)}
             </main>
         </div>
     );

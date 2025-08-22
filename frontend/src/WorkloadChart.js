@@ -63,7 +63,9 @@ function WorkloadChart({ startDate, endDate, dzialy }) {
     if (error) return <p style={{ color: 'red' }}>{error}</p>;
     if (chartData.datasets[0].data.length === 0) return <p>Brak danych dla wybranych filtrów.</p>;
 
-    return <Bar options={options} data={chartData} />;
+    return <div style={{ height: '550px' }}>
+        <Bar options={options} data={chartData} />
+        </div>;
 }
 
 export default WorkloadChart;
