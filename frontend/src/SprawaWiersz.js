@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
-import { Paperclip, ArrowDownFromLine, ArrowUpFromLine, FileText, History } from 'lucide-react';
+import { Paperclip, ArrowDownFromLine, ArrowUpFromLine, FileText, History, ReceiptText } from 'lucide-react';
 import PrintModal from './PrintModal';
 
 // Komponent dla okienka modalnego (popup)
@@ -17,7 +17,7 @@ function Modal({ title, children, onClose }) {
     );
 }
 
-function SprawaWiersz({ sprawa }) {
+function SprawaWiersz({ sprawa, onContractorClick }) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [zadania, setZadania] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -77,7 +77,6 @@ function SprawaWiersz({ sprawa }) {
         return '';
     };
 
-    // Przenosimy renderowanie modali na zewnątrz struktury tabeli za pomocą Portalu
     const renderModals = () => (
         <>
             {modalContent && ReactDOM.createPortal(
@@ -127,7 +126,18 @@ function SprawaWiersz({ sprawa }) {
                     {sprawa.nr_sprawy}
                 </td>
                 <td className="lista-przedmiotow">{sprawa.lista_przedmiotow}</td>
-                <td>{sprawa.nazwa_kontrahenta}</td>
+                <td className="kontrahent-cell">
+                    <ReceiptText 
+                        size={18} 
+                        className="icon-btn-details"
+                        title="Pokaż szczegóły kontrahenta"
+                        onClick={(e) => {
+                        e.stopPropagation();
+                        onContractorClick(sprawa.nazwa_kontrahenta);
+                        }} 
+                    />
+                    <span>{sprawa.nazwa_kontrahenta}</span>
+                </td>
                 <td>{sprawa.kontakt}</td>
                 <td>{sprawa.data_plan ? new Date(sprawa.data_plan).toLocaleDateString() : 'Brak'}</td>
                 <td><span className={`status status-${sprawa.status_opis.toLowerCase().replace(/ /g, '-')}`}>{sprawa.status_opis}</span></td>

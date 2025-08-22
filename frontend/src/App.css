@@ -582,3 +582,49 @@
 .div-tabs-buttons div.active {
   color: #007bff; /* <-- TA REGUŁA ODPOWIADA ZA NIEBIESKI KOLOR */
 }
+.contracts-section {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.contracts-section h4 {
+  margin-bottom: 10px;
+}
+
+.contracts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.contracts-table th, .contracts-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.contracts-table th {
+  background-color: #f2f2f2;
+}
+/* --- Style dla układu dwukolumnowego w modalu --- */
+.contractor-details {
+  display: flex; /* Włącza tryb Flexbox */
+  gap: 20px;     /* Odstęp między kolumnami */
+}
+
+.details-column {
+  flex: 1; /* Każda kolumna zajmuje tyle samo miejsca */
+}
+
+/* --- Style dla przewijanej tabeli umów --- */
+.contracts-table-container {
+  max-height: 300px;  /* Maksymalna wysokość (ok. 4 wiersze + nagłówek) */
+  overflow-y: auto;   /* Pokazuje pionowy pasek przewijania, gdy treść jest wyższa */
+  border: 1px solid #eee; /* Delikatna ramka dla kontenera tabeli */
+}
+/* Styl dla aktywnego (aktualnego) wiersza umowy w modalu */
+.contracts-table tr.active-contract {
+  background-color: #c7f0af; /* Jasnozielone tło */
+  font-weight: bold;         /* Pogrubiona czcionka dla wyróżnienia */
+}

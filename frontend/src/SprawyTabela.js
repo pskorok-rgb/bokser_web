@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import SprawaWiersz from './SprawaWiersz';
+import { ReceiptText } from 'lucide-react'; // Import ikony
+import ContractorDetailsModal from './ContractorDetailsModal'; // Import naszego modala
 
 function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearch, pokazPrzedawnione }) {
     const [sprawy, setSprawy] = useState([]);
@@ -10,6 +12,35 @@ function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearc
     const [sortConfig, setSortConfig] = useState({ key: 'data_plan', direction: 'descending' });
     const [error, setError] = useState(null);
     const recordsPerPage = 15;
+
+    // === POCZĄTEK NOWEGO KODU (STANY I FUNKCJA DLA MODALA) ===
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedContractor, setSelectedContractor] = useState(null);
+    const [isLoadingModal, setIsLoadingModal] = useState(false);
+
+    const handleContractorIconClick = (nazwaKontrahenta) => {
+  if (!nazwaKontrahenta) {
+    console.error("Brak nazwy kontrahenta!");
+    return;
+  }
+
+  setIsModalOpen(true);
+  setIsLoadingModal(true);
+  setSelectedContractor(null);
+
+  // ZMIANA TUTAJ: Używamy nowego endpointu i enkodujemy nazwę na potrzeby URL
+  axios.get(`http://localhost:5001/api/kontrahenci/by-name/${encodeURIComponent(nazwaKontrahenta)}`)
+    .then(response => {
+      setSelectedContractor(response.data);
+    })
+    .catch(error => {
+      console.error("Błąd pobierania danych kontrahenta!", error);
+    })
+    .finally(() => {
+      setIsLoadingModal(false);
+    });
+};
+    // === KONIEC NOWEGO KODU ===
 
     useEffect(() => {
         setCurrentPage(1);
@@ -82,43 +113,62 @@ function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearc
     if (error) return <div className="table-container"><p style={{color: 'red'}}>{error}</p></div>;
 
     return (
-        <div className="table-container">
-            <div className="table-header">
-                <div className="records-info">
-                    <strong>Znaleziono: {totalRecords}</strong>
+        // Używamy fragmentu <>, aby móc zwrócić tabelę i modal jako rodzeństwo
+        <>
+            <div className="table-container">
+                <div className="table-header">
+                    <div className="records-info">
+                        <strong>Znaleziono: {totalRecords}</strong>
+                    </div>
+                    <div className="pagination">
+                        <button onClick={goToPreviousPage} disabled={currentPage === 1}>Poprzednia</button>
+                        <span>Strona {currentPage} z {totalPages || 1}</span>
+                        <button onClick={goToNextPage} disabled={currentPage === totalPages || totalPages === 0}>Następna</button>
+                    </div>
                 </div>
-                <div className="pagination">
-                    <button onClick={goToPreviousPage} disabled={currentPage === 1}>Poprzednia</button>
-                    <span>Strona {currentPage} z {totalPages || 1}</span>
-                    <button onClick={goToNextPage} disabled={currentPage === totalPages || totalPages === 0}>Następna</button>
-                </div>
+                
+                {(sprawy.length === 0 && !error) && <p style={{padding: '20px', textAlign: 'center'}}>Brak spraw do wyświetlenia dla wybranych filtrów.</p>}
+                {sprawy.length > 0 && (
+                    <table className="sprawy-table">
+                        <thead>
+                            <tr>
+                                <th>Numer Sprawy</th>
+                                <th>Przedmioty Zadań</th>
+                                <th>Kontrahent</th>
+                                <th>Kontakt</th>
+                                <th onClick={() => requestSort('data_plan')} className="sortable">
+                                    Data Planowana {sortConfig.key === 'data_plan' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : null}
+                                </th>
+                                <th onClick={() => requestSort('status_opis')} className="sortable">
+                                    Status {sortConfig.key === 'status_opis' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : null}
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {/* ZMIANA TUTAJ: Renderujemy wiersze bezpośrednio, a nie przez komponent SprawaWiersz, aby dodać ikonę */}
+                            {sortedSprawy.map(sprawa => (
+                                <SprawaWiersz 
+                                    key={sprawa.nr_sprawy} 
+                                    sprawa={sprawa}
+                                    // Przekazujemy funkcję do obsługi kliknięcia ikony jako prop
+                                    onContractorClick={handleContractorIconClick}
+                                />
+                            ))}
+                        </tbody>
+                    </table>
+                )}
             </div>
-            
-            {(sprawy.length === 0 && !error) && <p style={{padding: '20px', textAlign: 'center'}}>Brak spraw do wyświetlenia dla wybranych filtrów.</p>}
-            {sprawy.length > 0 && (
-                <table className="sprawy-table">
-                    <thead>
-                        <tr>
-                            <th>Numer Sprawy</th>
-                            <th>Przedmioty Zadań</th>
-                            <th>Kontrahent</th>
-                            <th>Kontakt</th>
-                            <th onClick={() => requestSort('data_plan')} className="sortable">
-                                Data Planowana {sortConfig.key === 'data_plan' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : null}
-                            </th>
-                            <th onClick={() => requestSort('status_opis')} className="sortable">
-                                Status {sortConfig.key === 'status_opis' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : null}
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sortedSprawy.map(sprawa => (
-                            <SprawaWiersz key={sprawa.nr_sprawy} sprawa={sprawa} />
-                        ))}
-                    </tbody>
-                </table>
+
+            {/* DODANY KOD: Warunkowe renderowanie modala */}
+            {isModalOpen && (
+                <ContractorDetailsModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    contractorData={selectedContractor}
+                    isLoading={isLoadingModal}
+                />
             )}
-        </div>
+        </>
     );
 }
 

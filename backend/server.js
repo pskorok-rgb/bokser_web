@@ -510,7 +510,52 @@ app.get('/api/sprawy/przedawnione-count', async (req, res) => {
         res.status(500).send("Błąd serwera");
     }
 });
+// NOWY ENDPOINT 12: do pobierania szczegółów konkretnego kontrahenta
+app.get('/api/kontrahenci/by-name/:nazwa', async (req, res) => {
+    const { nazwa } = req.params;
+    try {
+        const pool = await sql.connect(dbConfig);
 
+        // 1. Pobierz główne dane kontrahenta
+        const kontrahentResult = await pool.request()
+            .input('nazwa', sql.NVarChar, nazwa)
+            .query(`
+                SELECT 
+                    akronim, nazwa, miasto, adres, telefon, email, kodpocz, IDUSC
+                FROM bokser_kontrahenci 
+                WHERE nazwa = @nazwa
+            `);
+
+        if (kontrahentResult.recordset.length === 0) {
+            return res.status(404).send('Nie znaleziono kontrahenta o podanej nazwie.');
+        }
+
+        const kontrahentData = kontrahentResult.recordset[0];
+        const akronimKontrahenta = kontrahentData.akronim;
+
+        // 2. Pobierz powiązane umowy dla tego kontrahenta
+        const umowyResult = await pool.request()
+            .input('akronim', sql.NVarChar, akronimKontrahenta)
+            .query(`
+                SELECT przedmiot_umowy, koniec_umowy, uwagi, kto_serwisuje
+                FROM bokser_umowy
+                WHERE akronim = @akronim
+                ORDER BY koniec_umowy DESC
+            `);
+
+        // 3. Połącz wyniki w jeden obiekt i odeślij
+        const finalResponse = {
+            ...kontrahentData,
+            umowy: umowyResult.recordset 
+        };
+
+        res.json(finalResponse);
+
+    } catch (err) {
+        console.error('Błąd serwera przy pobieraniu danych kontrahenta i umów:', err);
+        res.status(500).send('Błąd serwera');
+    }
+});
 // --- URUCHOMIENIE SERWERA ---
 app.listen(port, () => {
     console.log(`Backend serwera działa na http://localhost:${port}`);
