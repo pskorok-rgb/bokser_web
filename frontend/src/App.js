@@ -10,6 +10,7 @@ import KompetencjeChart from './KompetencjeChart';
 import { ShieldAlert } from 'lucide-react';
 import SpermAnimation from './SpermAnimation';
 import { ListTodo, BarChart4 } from 'lucide-react';
+import ProgramSerwisantChart from './ProgramSerwisantChart';
 
 
 const formatDate = (date) => {
@@ -251,6 +252,7 @@ function App() {
         <option value="status">Wykres Statusów (Kołowy)</option>
         <option value="kompetencje">Wykres Kompetencji</option>
         <option value="przedmioty">Wykres Przedmiotów</option>
+        <option value="program-serwisant">Program - Serwisant</option>
         <option value="roczny">Wykres Roczny</option>
         <option value="workload">Obciążenie Pracą</option>
       </select>
@@ -273,6 +275,13 @@ function App() {
       {selectedChart === 'workload' && <WorkloadChart startDate={startDate} 
       endDate={endDate} 
       dzialy={selectedDzialy}/>}
+      {selectedChart === 'program-serwisant' && (
+    <ProgramSerwisantChart 
+      startDate={startDate} 
+      endDate={endDate} 
+      dzialy={selectedDzialy} 
+    />
+  )}
     </div>
 
   </div>

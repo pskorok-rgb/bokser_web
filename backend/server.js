@@ -554,6 +554,77 @@ app.get('/api/kontrahenci/:akronim', async (req, res) => {
         res.status(500).send('Błąd serwera');
     }
 });
+// NOWY ENDPOINT - Pobiera wszystkie unikalne kontakty dla danego kontrahenta
+app.get('/api/kontrahenci/:akronim/kontakty', async (req, res) => {
+    const { akronim } = req.params;
+    try {
+        const pool = await sql.connect(dbConfig);
+        const result = await pool.request()
+            .input('akronim', sql.NVarChar, akronim)
+            .query(`
+                SELECT kontakt
+                FROM dbo.bokser_sprawy
+                WHERE 
+                    akronim = @akronim 
+                    AND kontakt IS NOT NULL 
+                    AND LTRIM(RTRIM(kontakt)) <> ''
+                GROUP BY 
+                    kontakt
+                ORDER BY 
+                    MAX(data_zgl) DESC;
+            `);
+
+        res.json(result.recordset);
+
+    } catch (err) {
+        console.error('Błąd serwera przy pobieraniu listy kontaktów:', err);
+        res.status(500).send('Błąd serwera');
+    }
+});
+// NOWY ENDPOINT: Statystyki "Program - Serwisant"
+app.get('/api/statystyki/program-serwisant', async (req, res) => {
+    const { startDate, endDate, dzialy } = req.query;
+    try {
+        const pool = await sql.connect(dbConfig);
+        const request = pool.request();
+
+        let query = `
+            SELECT 
+                z.przedmiot, 
+                z.wykonawca, 
+                COUNT(z.id_zd) AS liczba_zadan
+            FROM dbo.bokser_zadania AS z
+            INNER JOIN dbo.bokser_sprawy AS s ON z.nr_spr = s.nr_sprawy
+            WHERE 
+                z.status = 3 -- Status "Zakończona"
+                AND z.przedmiot IS NOT NULL AND z.przedmiot <> ''
+                AND z.wykonawca IS NOT NULL AND z.wykonawca <> ''
+        `;
+
+        if (startDate && endDate) {
+            query += ` AND z.data_wyk >= @startDate AND z.data_wyk < DATEADD(day, 1, @endDate)`;
+            request.input('startDate', sql.Date, startDate);
+            request.input('endDate', sql.Date, endDate);
+        }
+
+        if (dzialy) {
+            const dzialyArray = dzialy.split(',');
+            if (dzialyArray.length > 0) {
+                const dzialyParams = dzialyArray.map((d, i) => `@dzial${i}`);
+                query += ` AND s.dzial IN (${dzialyParams.join(',')})`;
+                dzialyArray.forEach((d, i) => { request.input(`dzial${i}`, sql.NVarChar, d); });
+            }
+        }
+
+        query += ` GROUP BY z.przedmiot, z.wykonawca ORDER BY z.przedmiot, z.wykonawca;`;
+
+        const result = await request.query(query);
+        res.json(result.recordset);
+    } catch (err) {
+        console.error("Błąd serwera przy pobieraniu statystyk program-serwisant:", err);
+        res.status(500).send("Błąd podczas pobierania statystyk");
+    }
+});
 // --- URUCHOMIENIE SERWERA ---
 app.listen(port, () => {
     console.log(`Backend serwera działa na http://localhost:${port}`);

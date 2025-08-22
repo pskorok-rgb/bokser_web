@@ -1,7 +1,30 @@
-// frontend/src/ContractorDetailsModal.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 function ContractorDetailsModal({ isOpen, onClose, contractorData, isLoading }) {
+  const [kontaktList, setKontaktList] = useState([]);
+  const [isKontaktLoading, setIsKontaktLoading] = useState(true);
+
+  // Ten hook uruchomi się, gdy modal otrzyma dane kontrahenta,
+  // aby pobrać dodatkowo listę kontaktów
+  useEffect(() => {
+    if (contractorData && contractorData.akronim) {
+      setIsKontaktLoading(true);
+      axios.get(`http://localhost:5001/api/kontrahenci/${contractorData.akronim}/kontakty`)
+        .then(response => {
+          setKontaktList(response.data);
+        })
+        .catch(error => {
+          console.error("Błąd pobierania listy kontaktów!", error);
+          setKontaktList([]); // Wyczyść listę w razie błędu
+        })
+        .finally(() => {
+          setIsKontaktLoading(false);
+        });
+    }
+  }, [contractorData]);
+
+
   if (!isOpen) return null;
 
   const formatDate = (dateString) => {
@@ -18,16 +41,31 @@ function ContractorDetailsModal({ isOpen, onClose, contractorData, isLoading }) 
           <p>Ładowanie danych...</p>
         ) : contractorData ? (
           <>
-            <div className="contractor-details">
+            <div className="contractor-details three-columns">
+              {/* Lewa kolumna */}
               <div className="details-column">
                 <p><strong>Akronim:</strong> {contractorData.akronim}</p>
                 <p><strong>Nazwa:</strong> {contractorData.nazwa}</p>
                 <p><strong>Adres:</strong> {contractorData.adres}, {contractorData.kodpocz} {contractorData.miasto}</p>
               </div>
+              {/* Środkowa kolumna */}
               <div className="details-column">
                 <p><strong>IDUSC:</strong> {contractorData.IDUSC || 'Brak'}</p>
                 <p><strong>Telefon:</strong> {contractorData.telefon}</p>
                 <p><strong>Email:</strong> {contractorData.email}</p>
+              </div>
+              {/* Prawa kolumna - Nowa */}
+              <div className="details-column">
+                <strong>Wszystkie kontakty:</strong>
+                <div className="kontakt-list">
+                  {isKontaktLoading ? (
+                    <p>Ładowanie...</p>
+                  ) : kontaktList.length > 0 ? (
+                    kontaktList.map((item, index) => <p key={index}>{item.kontakt}</p>)
+                  ) : (
+                    <p>Brak historycznych kontaktów.</p>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -46,13 +84,11 @@ function ContractorDetailsModal({ isOpen, onClose, contractorData, isLoading }) 
                     </thead>
                     <tbody>
                       {contractorData.umowy.map((umowa, index) => {
-                        // === POCZĄTEK NOWEJ LOGIKI ===
                         const today = new Date();
-                        today.setHours(0, 0, 0, 0); // Ustawia godzinę na początek dnia dla precyzyjnego porównania
+                        today.setHours(0, 0, 0, 0);
                         const contractEndDate = new Date(umowa.koniec_umowy);
                         const isContractActive = contractEndDate >= today;
-                        // === KONIEC NOWEJ LOGIKI ===
-
+                        
                         return (
                           <tr key={index} className={isContractActive ? 'active-contract' : ''}>
                             <td>{umowa.przedmiot_umowy}</td>
