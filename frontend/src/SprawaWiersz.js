@@ -127,20 +127,27 @@ function SprawaWiersz({ sprawa, onContractorClick }) {
                 </td>
                 <td className="lista-przedmiotow">{sprawa.lista_przedmiotow}</td>
                 <td className="kontrahent-cell">
-                    <ReceiptText 
-                        size={18} 
-                        className="icon-btn-details"
-                        title="Pokaż szczegóły kontrahenta"
-                        onClick={(e) => {
-                        e.stopPropagation();
-                        onContractorClick(sprawa.kontrahent_akronim);
-                        }} 
-                    />
-                    <span>{sprawa.nazwa_kontrahenta}</span>
-                </td>
+  <div className="kontrahent-cell-content"> {/* <-- DODANY WEWNĘTRZNY DIV */}
+    <ReceiptText 
+      size={18} 
+      className="icon-btn-details"
+      title="Pokaż szczegóły kontrahenta"
+      onClick={(e) => {
+        e.stopPropagation();
+        onContractorClick(sprawa.kontrahent_akronim);
+      }} 
+    />
+    <span>{sprawa.nazwa_kontrahenta}</span>
+  </div>
+</td>
                 <td>{sprawa.kontakt}</td>
-                <td>{sprawa.data_plan ? new Date(sprawa.data_plan).toLocaleDateString() : 'Brak'}</td>
-                <td><span className={`status status-${sprawa.status_opis.toLowerCase().replace(/ /g, '-')}`}>{sprawa.status_opis}</span></td>
+                <td>
+                    {sprawa.data_plan ? new Date(sprawa.data_plan).toLocaleDateString('pl-PL') : 'Brak'}
+                    {sprawa.godz_plan && `, godz. ${new Date(sprawa.godz_plan).toISOString().substring(11, 16)}`}
+                </td>
+                <td>
+                    <span className={`status status-${sprawa.status_opis.toLowerCase().replace(/ /g, '-')}`}>{sprawa.status_opis}</span>
+                </td>
             </tr>
 
             {isExpanded && (

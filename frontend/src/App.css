@@ -628,3 +628,10 @@
   background-color: #c7f0af; /* Jasnozielone tło */
   font-weight: bold;         /* Pogrubiona czcionka dla wyróżnienia */
 }
+/* Stylizuje komórkę z kontrahentem, aby ikona i tekst były w jednej linii */
+/* Zmieniamy styl, aby celował w wewnętrzny div, a nie w komórkę <td> */
+.kontrahent-cell-content {
+  display: flex;
+  align-items: center; /* Wyrównuje elementy w pionie */
+  gap: 10px;           /* Dodaje odstęp 10px między ikoną a tekstem */
+}

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import SprawaWiersz from './SprawaWiersz';
-import { ReceiptText } from 'lucide-react'; // Import ikony
-import ContractorDetailsModal from './ContractorDetailsModal'; // Import naszego modala
+import { ReceiptText } from 'lucide-react';
+import ContractorDetailsModal from './ContractorDetailsModal';
 
 function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearch, pokazPrzedawnione }) {
     const [sprawy, setSprawy] = useState([]);
@@ -12,43 +12,36 @@ function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearc
     const [sortConfig, setSortConfig] = useState({ key: 'data_plan', direction: 'descending' });
     const [error, setError] = useState(null);
     const recordsPerPage = 15;
-
-    // === POCZĄTEK NOWEGO KODU (STANY I FUNKCJA DLA MODALA) ===
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedContractor, setSelectedContractor] = useState(null);
     const [isLoadingModal, setIsLoadingModal] = useState(false);
 
     const handleContractorIconClick = (akronim) => {
-  if (!akronim) {
-    console.error("Brak akronimu kontrahenta!");
-    // Opcjonalnie: Pokaż użytkownikowi błąd
-    // alert("Brak akronimu, nie można pobrać danych.");
-    return;
-  }
-  
-  setIsModalOpen(true);
-  setIsLoadingModal(true);
-  setSelectedContractor(null);
-
-  // ZMIANA TUTAJ: Używamy nowego endpointu z akronimem
-  axios.get(`http://localhost:5001/api/kontrahenci/${akronim}`)
-    .then(response => {
-      setSelectedContractor(response.data);
-    })
-    .catch(error => {
-      console.error("Błąd pobierania danych kontrahenta!", error);
-    })
-    .finally(() => {
-      setIsLoadingModal(false);
-    });
-};
-    // === KONIEC NOWEGO KODU ===
+        if (!akronim) {
+            console.error("Brak akronimu kontrahenta!");
+            return;
+        }
+        setIsModalOpen(true);
+        setIsLoadingModal(true);
+        setSelectedContractor(null);
+        axios.get(`http://localhost:5001/api/kontrahenci/${akronim}`)
+            .then(response => {
+                setSelectedContractor(response.data);
+            })
+            .catch(error => {
+                console.error("Błąd pobierania danych kontrahenta!", error);
+            })
+            .finally(() => {
+                setIsLoadingModal(false);
+            });
+    };
 
     useEffect(() => {
         setCurrentPage(1);
     }, [startDate, endDate, dzialy, numerSearch, kontrahentSearch, pokazPrzedawnione]);
 
     useEffect(() => {
+        // ... (Twój kod do pobierania danych pozostaje bez zmian)
         if (!pokazPrzedawnione && !kontrahentSearch && (!startDate || !endDate || !dzialy || dzialy.length === 0)) {
             setSprawy([]);
             setTotalPages(0);
@@ -86,16 +79,35 @@ function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearc
     }, [startDate, endDate, dzialy, currentPage, numerSearch, kontrahentSearch, pokazPrzedawnione]);
     
     const sortedSprawy = useMemo(() => {
+        // ... (Twoja logika sortowania, w tym ta dla daty+godziny, pozostaje bez zmian)
         let sortableItems = [...sprawy];
         if (sortConfig !== null) {
             sortableItems.sort((a, b) => {
-                if (a[sortConfig.key] < b[sortConfig.key]) {
-                    return sortConfig.direction === 'ascending' ? -1 : 1;
+                if (sortConfig.key === 'data_plan') {
+                    const dateTimeA = new Date(a.data_plan);
+                    if (a.godz_plan) {
+                        const timeA = new Date(a.godz_plan);
+                        dateTimeA.setUTCHours(timeA.getUTCHours(), timeA.getUTCMinutes(), timeA.getUTCSeconds());
+                    }
+                    const dateTimeB = new Date(b.data_plan);
+                    if (b.godz_plan) {
+                        const timeB = new Date(b.godz_plan);
+                        dateTimeB.setUTCHours(timeB.getUTCHours(), timeB.getUTCMinutes(), timeB.getUTCSeconds());
+                    }
+                    if (sortConfig.direction === 'ascending') {
+                        return dateTimeA - dateTimeB;
+                    } else {
+                        return dateTimeB - dateTimeA;
+                    }
+                } else {
+                    if (a[sortConfig.key] < b[sortConfig.key]) {
+                        return sortConfig.direction === 'ascending' ? -1 : 1;
+                    }
+                    if (a[sortConfig.key] > b[sortConfig.key]) {
+                        return sortConfig.direction === 'ascending' ? 1 : -1;
+                    }
+                    return 0;
                 }
-                if (a[sortConfig.key] > b[sortConfig.key]) {
-                    return sortConfig.direction === 'ascending' ? 1 : -1;
-                }
-                return 0;
             });
         }
         return sortableItems;
@@ -114,8 +126,8 @@ function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearc
 
     if (error) return <div className="table-container"><p style={{color: 'red'}}>{error}</p></div>;
 
+    // === POCZĄTEK POPRAWIONEJ STRUKTURY JSX ===
     return (
-        // Używamy fragmentu <>, aby móc zwrócić tabelę i modal jako rodzeństwo
         <>
             <div className="table-container">
                 <div className="table-header">
@@ -132,8 +144,10 @@ function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearc
                 {(sprawy.length === 0 && !error) && <p style={{padding: '20px', textAlign: 'center'}}>Brak spraw do wyświetlenia dla wybranych filtrów.</p>}
                 {sprawy.length > 0 && (
                     <table className="sprawy-table">
+                        {/* Nagłówek jest tutaj, w SprawyTabela, gdzie ma dostęp do requestSort */}
                         <thead>
                             <tr>
+                                 
                                 <th>Numer Sprawy</th>
                                 <th>Przedmioty Zadań</th>
                                 <th>Kontrahent</th>
@@ -146,13 +160,12 @@ function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearc
                                 </th>
                             </tr>
                         </thead>
+                        {/* Ciało tabeli mapuje dane i przekazuje je do komponentu SprawaWiersz */}
                         <tbody>
-                            {/* ZMIANA TUTAJ: Renderujemy wiersze bezpośrednio, a nie przez komponent SprawaWiersz, aby dodać ikonę */}
                             {sortedSprawy.map(sprawa => (
                                 <SprawaWiersz 
                                     key={sprawa.nr_sprawy} 
                                     sprawa={sprawa}
-                                    // Przekazujemy funkcję do obsługi kliknięcia ikony jako prop
                                     onContractorClick={handleContractorIconClick}
                                 />
                             ))}
@@ -161,7 +174,6 @@ function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearc
                 )}
             </div>
 
-            {/* DODANY KOD: Warunkowe renderowanie modala */}
             {isModalOpen && (
                 <ContractorDetailsModal
                     isOpen={isModalOpen}
@@ -172,6 +184,7 @@ function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearc
             )}
         </>
     );
+    // === KONIEC POPRAWIONEJ STRUKTURY JSX ===
 }
 
 export default SprawyTabela;

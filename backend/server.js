@@ -93,6 +93,7 @@ app.get('/api/sprawy', async (req, res) => {
                 s.akronim AS kontrahent_akronim,
                 s.kontakt, -- DODANO NOWĄ KOLUMNĘ
                 s.data_plan,
+                s.godz_plan,
                 s.data_zak,
                 CASE s.status WHEN 1 THEN 'Otwarta' WHEN 2 THEN 'W trakcie realizacji' WHEN 3 THEN 'Zakończona' ELSE 'Nieznany' END AS status_opis
             ${baseQuery}
