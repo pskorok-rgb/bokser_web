@@ -12,6 +12,7 @@ import SpermAnimation from './SpermAnimation';
 import { ListTodo, BarChart4 } from 'lucide-react';
 import ProgramSerwisantChart from './ProgramSerwisantChart';
 import WorkloadSprawyChart from './WorkloadSprawyChart';
+import ProgramWersjeChart from './ProgramWersjeChart';
 
 const formatDate = (date) => {
     const d = new Date(date);
@@ -272,6 +273,7 @@ function App() {
                                 <option value="roczny">Wykres Roczny</option>
                                 <option value="workload">Obciążenie Pracą - zadania</option>
                                 <option value="workload-sprawy">Obciążenie pracą - Sprawy</option>
+                                <option value="program-wersje">Program - Aktualne wersje</option>
                             </select>
                         </div>
                         <div className="chart-display-area">
@@ -282,6 +284,7 @@ function App() {
                             {selectedChart === 'workload' && <WorkloadChart startDate={startDate} endDate={endDate} dzialy={selectedDzialy}/>}
                             {selectedChart === 'program-serwisant' && <ProgramSerwisantChart startDate={startDate} endDate={endDate} dzialy={selectedDzialy} />}
                             {selectedChart === 'workload-sprawy' && <WorkloadSprawyChart startDate={startDate} endDate={endDate} dzialy={selectedDzialy} />}
+                            {selectedChart === 'program-wersje' && <ProgramWersjeChart />}
                         </div>
                     </div>
                 )}

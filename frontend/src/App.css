@@ -661,3 +661,20 @@
   margin: 2px 0; /* Bardziej zwarta lista */
   font-size: 0.85em;
 }
+.chart-back-button {
+  margin-bottom: 15px;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.chart-back-button:hover {
+  background-color: #e9ecef;
+}
+.modal-scrollable-content {
+  max-height: 400px; /* Maksymalna wysokość listy */
+  overflow-y: auto;  /* Dodaje scroll, gdy lista jest dłuższa */
+}

@@ -21,9 +21,9 @@ function SprawaWiersz({ sprawa, onContractorClick }) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [zadania, setZadania] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [modalContent, setModalContent] = useState(null); // Dla uwag
-    const [printModalData, setPrintModalData] = useState(null); // Dla wydruku
-    const [historyModalData, setHistoryModalData] = useState(null); // Dla historii
+    const [modalContent, setModalContent] = useState(null);
+    const [printModalData, setPrintModalData] = useState(null);
+    const [historyModalData, setHistoryModalData] = useState(null);
 
     const handleToggle = () => {
         const newIsExpanded = !isExpanded;
@@ -127,19 +127,19 @@ function SprawaWiersz({ sprawa, onContractorClick }) {
                 </td>
                 <td className="lista-przedmiotow">{sprawa.lista_przedmiotow}</td>
                 <td className="kontrahent-cell">
-  <div className="kontrahent-cell-content"> {/* <-- DODANY WEWNĘTRZNY DIV */}
-    <ReceiptText 
-      size={18} 
-      className="icon-btn-details"
-      title="Pokaż szczegóły kontrahenta"
-      onClick={(e) => {
-        e.stopPropagation();
-        onContractorClick(sprawa.kontrahent_akronim);
-      }} 
-    />
-    <span>{sprawa.nazwa_kontrahenta}</span>
-  </div>
-</td>
+                    <div className="kontrahent-cell-content">
+                        <ReceiptText 
+                            size={18} 
+                            className="icon-btn-details"
+                            title="Pokaż szczegóły kontrahenta"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onContractorClick(sprawa.kontrahent_akronim);
+                            }} 
+                        />
+                        <span>{sprawa.nazwa_kontrahenta}</span>
+                    </div>
+                </td>
                 <td>{sprawa.kontakt}</td>
                 <td>
                     {sprawa.data_plan ? new Date(sprawa.data_plan).toLocaleDateString('pl-PL') : 'Brak'}
@@ -183,6 +183,7 @@ function SprawaWiersz({ sprawa, onContractorClick }) {
                                         <tr>
                                             <th>Czynność</th>
                                             <th>Przedmiot</th>
+                                            <th>Nr Wersji</th>{/* <-- NOWY NAGŁÓWEK */}
                                             <th>Serwisant</th>
                                             <th>Data wykonania</th>
                                             <th>Status</th>
@@ -207,6 +208,7 @@ function SprawaWiersz({ sprawa, onContractorClick }) {
                                                         </button>
                                                     )}
                                                 </td>
+                                                <td>{zadanie.nr_wersji}</td>{/* <-- NOWA KOMÓRKA Z DANYMI */}
                                                 <td>{zadanie.serwisant}</td>
                                                 <td>{zadanie.data_wyk ? new Date(zadanie.data_wyk).toLocaleDateString() : 'Brak'}</td>
                                                 <td>{zadanie.status_opis}</td>

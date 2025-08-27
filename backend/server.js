@@ -110,12 +110,7 @@ app.get('/api/sprawy', async (req, res) => {
             OFFSET ${offset} ROWS FETCH NEXT ${parseInt(limit)} ROWS ONLY;
         `;
         
-        // --- LOGOWANIE DO KONSOLI ---
-        console.log("--- DEBUG: Pełne zapytanie SQL ---");
-        console.log(dataQuery);
-        console.log("--- DEBUG: Parametry zapytania ---");
-        console.log(request.parameters);
-        // --- KONIEC LOGOWANIA ---
+
 
         const countResult = await request.query(countQuery);
         const dataResult = await request.query(dataQuery);
@@ -142,9 +137,8 @@ app.get('/api/zadania', async (req, res) => {
         }
         request.input('nr_sprawy_param', sql.NVarChar, nr_sprawy);
         const result = await request.query(`
-            SELECT czynnosc, przedmiot, wykonawca AS serwisant, data_wyk,
-                   CASE status WHEN 1 THEN 'Otwarta' WHEN 2 THEN 'W trakcie realizacji' WHEN 3 THEN 'Zakończona' ELSE 'Nieznany' END AS status_opis,
-                   uwagi
+            SELECT czynnosc, przedmiot, nr_wersji, wykonawca AS serwisant, data_wyk,
+            CASE status WHEN 1 THEN 'Otwarta' WHEN 2 THEN 'W trakcie realizacji' WHEN 3 THEN 'Zakończona' ELSE 'Nieznany' END AS status_opis, uwagi
             FROM dbo.bokser_zadania 
             WHERE nr_spr = @nr_sprawy_param
             ORDER BY data_zad DESC;
@@ -683,6 +677,191 @@ app.get('/api/statystyki/obciazenie-sprawy', async (req, res) => {
         res.status(500).send("Błąd podczas pobierania statystyk");
     }
 });
+// ZAKTUALIZOWANY ENDPOINT 1: Wykres główny "Program - Aktualne wersje"
+app.get('/api/statystyki/aktualne-wersje-programow', async (req, res) => {
+    try {
+        const pool = await sql.connect(dbConfig);
+        const request = pool.request();
+        const query = `
+            WITH RankedVersions AS (
+                SELECT
+                    z.przedmiot, z.nr_wersji, s.akronim,
+                    ROW_NUMBER() OVER(
+                        PARTITION BY 
+                            CASE 
+                                WHEN z.przedmiot IN ('PB_EWID2', 'PB_EWID3') THEN 'PB_EWID'
+                                WHEN z.przedmiot IN ('PB_EWID_SRP', 'PB_EWID_SRP3') THEN 'PB_EWID_SRP'
+                                ELSE z.przedmiot 
+                            END, 
+                            s.akronim 
+                        ORDER BY s.data_zak DESC
+                    ) as rn
+                FROM dbo.bokser_zadania z
+                INNER JOIN dbo.bokser_sprawy s ON z.nr_spr = s.nr_sprawy
+                INNER JOIN dbo.bokser_umowy u ON s.akronim = u.akronim
+                WHERE z.status = 3
+                  AND s.data_zak IS NOT NULL
+                  AND z.przedmiot IS NOT NULL AND z.przedmiot <> ''
+                  AND z.nr_wersji IS NOT NULL AND z.nr_wersji <> ''
+                  AND u.koniec_umowy >= GETDATE()
+                  AND (
+                      (u.przedmiot_umowy = 'PB_EWID, PB_EWID_SRP' AND z.przedmiot IN ('PB_EWID2', 'PB_EWID3', 'PB_EWID_SRP', 'PB_EWID_SRP3', 'Webservice', 'GOSC', 'EKSPORT_EWID')) OR
+                      (u.przedmiot_umowy = 'PB_USC, EKSPORT_USC' AND z.przedmiot IN ('PESEL_USC', 'KONEKTOR_USC', 'PB_USC', 'USC_2019', 'EKSPORT_USC', 'USC_2016', 'USC_2020')) OR
+                      (u.przedmiot_umowy = 'tEZD' AND z.przedmiot IN ('tEZD_micro', 'tEZD', 'tEZD_USC')) OR
+                      (u.przedmiot_umowy = 'AA_USC' AND z.przedmiot = 'AA_USC') OR
+                      (u.przedmiot_umowy = 'UstalTermin' AND z.przedmiot IN ('UstalTermin_local', 'UstalTermin_cloud'))
+                  )
+            )
+            SELECT
+                CASE 
+                    WHEN przedmiot IN ('PB_EWID2', 'PB_EWID3') THEN 'PB_EWID'
+                    WHEN przedmiot IN ('PB_EWID_SRP', 'PB_EWID_SRP3') THEN 'PB_EWID_SRP'
+                    ELSE przedmiot 
+                END AS przedmiot,
+                nr_wersji, COUNT(*) AS ilosc
+            FROM RankedVersions
+            WHERE rn = 1
+            GROUP BY 
+                CASE 
+                    WHEN przedmiot IN ('PB_EWID2', 'PB_EWID3') THEN 'PB_EWID'
+                    WHEN przedmiot IN ('PB_EWID_SRP', 'PB_EWID_SRP3') THEN 'PB_EWID_SRP'
+                    ELSE przedmiot 
+                END, 
+                nr_wersji
+            ORDER BY przedmiot, nr_wersji;
+        `;
+        const result = await request.query(query);
+        res.json(result.recordset);
+    } catch (err) {
+        console.error("Błąd serwera przy pobieraniu statystyk aktualnych wersji:", err);
+        res.status(500).send("Błąd podczas pobierania statystyk");
+    }
+});
+
+// ZAKTUALIZOWANY ENDPOINT 2: Widok szczegółowy wersji
+app.get('/api/statystyki/wersje-per-program', async (req, res) => {
+    const { przedmiot } = req.query;
+    if (!przedmiot) { return res.status(400).send("Brak parametru 'przedmiot'"); }
+    try {
+        const pool = await sql.connect(dbConfig);
+        const request = pool.request();
+        let przedmiotCondition = '';
+        if (przedmiot === 'PB_EWID') {
+            przedmiotCondition = `z.przedmiot IN ('PB_EWID2', 'PB_EWID3')`;
+        } else if (przedmiot === 'PB_EWID_SRP') {
+            przedmiotCondition = `z.przedmiot IN ('PB_EWID_SRP', 'PB_EWID_SRP3')`;
+        } else {
+            przedmiotCondition = `z.przedmiot = @przedmiot_param`;
+            request.input('przedmiot_param', sql.NVarChar, przedmiot);
+        }
+        const query = `
+            WITH RankedVersions AS (
+                SELECT
+                    z.przedmiot, z.nr_wersji, s.akronim,
+                    ROW_NUMBER() OVER(
+                        PARTITION BY 
+                            CASE 
+                                WHEN z.przedmiot IN ('PB_EWID2', 'PB_EWID3') THEN 'PB_EWID'
+                                WHEN z.przedmiot IN ('PB_EWID_SRP', 'PB_EWID_SRP3') THEN 'PB_EWID_SRP'
+                                ELSE z.przedmiot 
+                            END, 
+                            s.akronim 
+                        ORDER BY s.data_zak DESC
+                    ) as rn
+                FROM dbo.bokser_zadania z
+                INNER JOIN dbo.bokser_sprawy s ON z.nr_spr = s.nr_sprawy
+                INNER JOIN dbo.bokser_umowy u ON s.akronim = u.akronim
+                WHERE z.status = 3
+                  AND s.data_zak IS NOT NULL
+                  AND ${przedmiotCondition}
+                  AND z.nr_wersji IS NOT NULL AND z.nr_wersji <> ''
+                  AND u.koniec_umowy >= GETDATE()
+                  AND (
+                      (u.przedmiot_umowy = 'PB_EWID, PB_EWID_SRP' AND z.przedmiot IN ('PB_EWID2', 'PB_EWID3', 'PB_EWID_SRP', 'PB_EWID_SRP3', 'Webservice', 'GOSC', 'EKSPORT_EWID')) OR
+                      (u.przedmiot_umowy = 'PB_USC, EKSPORT_USC' AND z.przedmiot IN ('PESEL_USC', 'KONEKTOR_USC', 'PB_USC', 'USC_2019', 'EKSPORT_USC', 'USC_2016', 'USC_2020')) OR
+                      (u.przedmiot_umowy = 'tEZD' AND z.przedmiot IN ('tEZD_micro', 'tEZD', 'tEZD_USC')) OR
+                      (u.przedmiot_umowy = 'AA_USC' AND z.przedmiot = 'AA_USC') OR
+                      (u.przedmiot_umowy = 'UstalTermin' AND z.przedmiot IN ('UstalTermin_local', 'UstalTermin_cloud'))
+                  )
+            )
+            SELECT
+                nr_wersji, COUNT(*) AS ilosc
+            FROM RankedVersions
+            WHERE rn = 1
+            GROUP BY nr_wersji
+            ORDER BY nr_wersji DESC;
+        `;
+        const result = await request.query(query);
+        res.json(result.recordset);
+    } catch (err) {
+        console.error("Błąd serwera przy pobieraniu breakdownu wersji:", err);
+        res.status(500).send("Błąd podczas pobierania statystyk");
+    }
+});
+
+// ZAKTUALIZOWANY ENDPOINT 3: Lista kontrahentów
+app.get('/api/statystyki/kontrahenci-per-wersja', async (req, res) => {
+    const { przedmiot, wersja } = req.query;
+    if (!przedmiot || !wersja) { return res.status(400).send("Brak parametru 'przedmiot' lub 'wersja'"); }
+    try {
+        const pool = await sql.connect(dbConfig);
+        const request = pool.request();
+        let przedmiotCondition = '';
+        if (przedmiot === 'PB_EWID') {
+            przedmiotCondition = `z.przedmiot IN ('PB_EWID2', 'PB_EWID3')`;
+        } else if (przedmiot === 'PB_EWID_SRP') {
+            przedmiotCondition = `z.przedmiot IN ('PB_EWID_SRP', 'PB_EWID_SRP3')`;
+        } else {
+            przedmiotCondition = `z.przedmiot = @przedmiot_param`;
+            request.input('przedmiot_param', sql.NVarChar, przedmiot);
+        }
+        request.input('wersja_param', sql.NVarChar, wersja);
+        const query = `
+            WITH RankedVersions AS (
+                SELECT
+                    z.nr_wersji, k.nazwa AS nazwa_kontrahenta,
+                    ROW_NUMBER() OVER(
+                        PARTITION BY 
+                            CASE 
+                                WHEN z.przedmiot IN ('PB_EWID2', 'PB_EWID3') THEN 'PB_EWID'
+                                WHEN z.przedmiot IN ('PB_EWID_SRP', 'PB_EWID_SRP3') THEN 'PB_EWID_SRP'
+                                ELSE z.przedmiot 
+                            END, 
+                            s.akronim 
+                        ORDER BY s.data_zak DESC
+                    ) as rn
+                FROM dbo.bokser_zadania z
+                INNER JOIN dbo.bokser_sprawy s ON z.nr_spr = s.nr_sprawy
+                LEFT JOIN dbo.bokser_kontrahenci k ON s.akronim = k.akronim
+                INNER JOIN dbo.bokser_umowy u ON s.akronim = u.akronim
+                WHERE z.status = 3
+                  AND s.data_zak IS NOT NULL
+                  AND ${przedmiotCondition}
+                  AND z.nr_wersji IS NOT NULL AND z.nr_wersji <> ''
+                  AND k.nazwa IS NOT NULL
+                  AND u.koniec_umowy >= GETDATE()
+                  AND (
+                      (u.przedmiot_umowy = 'PB_EWID, PB_EWID_SRP' AND z.przedmiot IN ('PB_EWID2', 'PB_EWID3', 'PB_EWID_SRP', 'PB_EWID_SRP3', 'Webservice', 'GOSC', 'EKSPORT_EWID')) OR
+                      (u.przedmiot_umowy = 'PB_USC, EKSPORT_USC' AND z.przedmiot IN ('PESEL_USC', 'KONEKTOR_USC', 'PB_USC', 'USC_2019', 'EKSPORT_USC', 'USC_2016', 'USC_2020')) OR
+                      (u.przedmiot_umowy = 'tEZD' AND z.przedmiot IN ('tEZD_micro', 'tEZD', 'tEZD_USC')) OR
+                      (u.przedmiot_umowy = 'AA_USC' AND z.przedmiot = 'AA_USC') OR
+                      (u.przedmiot_umowy = 'UstalTermin' AND z.przedmiot IN ('UstalTermin_local', 'UstalTermin_cloud'))
+                  )
+            )
+            SELECT
+                nazwa_kontrahenta
+            FROM RankedVersions
+            WHERE rn = 1 AND nr_wersji = @wersja_param
+            ORDER BY nazwa_kontrahenta;
+        `;
+        const result = await request.query(query);
+        res.json(result.recordset);
+    } catch (err) {
+        console.error("Błąd serwera przy pobieraniu listy kontrahentów per wersja:", err);
+        res.status(500).send("Błąd podczas pobierania statystyk");
+    }
+});
+
 // --- URUCHOMIENIE SERWERA ---
 app.listen(port, () => {
     console.log(`Backend serwera działa na http://localhost:${port}`);
