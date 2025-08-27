@@ -11,7 +11,7 @@ import { ShieldAlert } from 'lucide-react';
 import SpermAnimation from './SpermAnimation';
 import { ListTodo, BarChart4 } from 'lucide-react';
 import ProgramSerwisantChart from './ProgramSerwisantChart';
-
+import WorkloadSprawyChart from './WorkloadSprawyChart';
 
 const formatDate = (date) => {
     const d = new Date(date);
@@ -31,6 +31,18 @@ function App() {
             endDate: today,
         };
     };
+
+    // Stany dla filtrów, które są wysyłane do API
+    const [numerSearch, setNumerSearch] = useState('');
+    const [kontrahentSearch, setKontrahentSearch] = useState('');
+    const [uwagiSearch, setUwagiSearch] = useState('');
+
+    // NOWE: Stany przechowujące aktualną wartość w polach input
+    const [numerInput, setNumerInput] = useState('');
+    const [kontrahentInput, setKontrahentInput] = useState('');
+    const [uwagiInput, setUwagiInput] = useState('');
+
+    // Pozostałe stany
     const [showAnimation, setShowAnimation] = useState(false);
     const [startDate, setStartDate] = useState(getInitialDates().startDate);
     const [endDate, setEndDate] = useState(getInitialDates().endDate);
@@ -38,8 +50,6 @@ function App() {
     const [selectedDzialy, setSelectedDzialy] = useState(['U1S']);
     const [activePreset, setActivePreset] = useState('day');
     const [selectedChart, setSelectedChart] = useState('status');
-    const [numerSearch, setNumerSearch] = useState('');
-    const [kontrahentSearch, setKontrahentSearch] = useState('');
     const [przedawnioneCount, setPrzedawnioneCount] = useState(0);
     const [pokazPrzedawnione, setPokazPrzedawnione] = useState(false);
     const [activeTab, setActiveTab] = useState('sprawy');
@@ -54,23 +64,32 @@ function App() {
             .catch(err => console.error("Błąd pobierania liczby spraw przedawnionych!", err));
     }, []);
 
-    const clearStandardFilters = () => {
+    const clearSearchFilters = () => {
+        setNumerInput('');
+        setKontrahentInput('');
+        setUwagiInput('');
+        setNumerSearch('');
+        setKontrahentSearch('');
+        setUwagiSearch('');
+    };
+
+    const applySearchFilters = () => {
         setStartDate('');
         setEndDate('');
         setActivePreset(null);
-        setNumerSearch('');
-    };
+        setPokazPrzedawnione(false);
 
-    const clearKontrahentFilter = () => {
-        setKontrahentSearch('');
+        setNumerSearch(numerInput);
+        setKontrahentSearch(kontrahentInput);
+        setUwagiSearch(uwagiInput);
     };
 
     const handleDzialChange = (dzial) => {
         setPokazPrzedawnione(false);
-        clearKontrahentFilter();
+        clearSearchFilters();
         setSelectedDzialy(prevSelected => {
             if (prevSelected.includes(dzial)) {
-                return prevSelected.filter(item => item !== dzial);
+                return prevSelected.length > 1 ? prevSelected.filter(item => item !== dzial) : prevSelected;
             } else {
                 return [...prevSelected, dzial];
             }
@@ -79,7 +98,7 @@ function App() {
 
     const handlePresetClick = (preset) => {
         setPokazPrzedawnione(false);
-        clearKontrahentFilter();
+        clearSearchFilters();
         setActivePreset(preset);
         const today = new Date();
         let newStartDate = new Date();
@@ -100,7 +119,7 @@ function App() {
 
     const handleManualDateChange = (value, type) => {
         setPokazPrzedawnione(false);
-        clearKontrahentFilter();
+        clearSearchFilters();
         setActivePreset(null);
         if (type === 'start') {
             setStartDate(value);
@@ -109,22 +128,12 @@ function App() {
         }
     };
 
-    const handleNumerSearch = (value) => {
-        setPokazPrzedawnione(false);
-        clearKontrahentFilter();
-        setNumerSearch(value);
-    };
-
-    const handleKontrahentSearch = (value) => {
-        setPokazPrzedawnione(false);
-        clearStandardFilters();
-        setKontrahentSearch(value);
-    };
-
     const handlePokazPrzedawnione = () => {
         if (przedawnioneCount > 0) {
-            clearStandardFilters();
-            clearKontrahentFilter();
+            clearSearchFilters();
+            setStartDate('');
+            setEndDate('');
+            setActivePreset(null);
             setPokazPrzedawnione(true);
             setActiveTab('sprawy');
         }
@@ -140,7 +149,7 @@ function App() {
                 BOKser_web
                 </button>
                 {showAnimation && <SpermAnimation />}
-                </header>
+            </header>
             
             <div className="filters-panel">
                 <div className="filter-row-main">
@@ -179,38 +188,46 @@ function App() {
                         <div className="search-filter">
                             <label>Numer:</label>
                             <div className="search-input-wrapper">
-                                <input type="text" placeholder="Fragment numeru..." value={numerSearch} onChange={e => handleNumerSearch(e.target.value)} />
-                                {numerSearch && <button onClick={() => handleNumerSearch('')} className="clear-search-btn">&times;</button>}
+                                <input type="text" placeholder="Fragment numeru..." value={numerInput} onChange={e => setNumerInput(e.target.value)} />
+                                {numerInput && <button onClick={() => setNumerInput('')} className="clear-search-btn">&times;</button>}
                             </div>
                         </div>
                         <div className="search-filter">
                             <label>Kontrahent:</label>
                             <div className="search-input-wrapper">
-                                <input type="text" placeholder="Miasto kontrahenta..." value={kontrahentSearch} onChange={e => handleKontrahentSearch(e.target.value)} />
-                                {kontrahentSearch && <button onClick={() => handleKontrahentSearch('')} className="clear-search-btn">&times;</button>}
+                                <input type="text" placeholder="Miasto kontrahenta..." value={kontrahentInput} onChange={e => setKontrahentInput(e.target.value)} />
+                                {kontrahentInput && <button onClick={() => setKontrahentInput('')} className="clear-search-btn">&times;</button>}
                             </div>
                         </div>
+                        <div className="search-filter">
+                            <label>Uwagi:</label>
+                            <div className="search-input-wrapper">
+                                <input type="text" placeholder="Fragment uwagi..." value={uwagiInput} onChange={e => setUwagiInput(e.target.value)} />
+                                {uwagiInput && <button onClick={() => setUwagiInput('')} className="clear-search-btn">&times;</button>}
+                            </div>
+                        </div>
+                        <button onClick={applySearchFilters} className="search-apply-btn">Szukaj</button>
                     </div>
                 </div>
             </div>
 
             <div className="tabs-container">
                 <div className="div-tabs-buttons">
-  <div // <-- ZMIANA Z BUTTON NA DIV
-    className={activeTab === 'sprawy' ? 'active' : ''} 
-    onClick={() => setActiveTab('sprawy')}
-    title="Sprawy"
-  >
-    <ListTodo size={20} />
-  </div>
-  <div // <-- ZMIANA Z BUTTON NA DIV
-    className={activeTab === 'wykresy' ? 'active' : ''} 
-    onClick={() => setActiveTab('wykresy')}
-    title="Wykresy"
-  >
-    <BarChart4 size={20} />
-  </div>
-</div>
+                    <div
+                        className={activeTab === 'sprawy' ? 'active' : ''} 
+                        onClick={() => setActiveTab('sprawy')}
+                        title="Sprawy"
+                    >
+                        <ListTodo size={20} />
+                    </div>
+                    <div
+                        className={activeTab === 'wykresy' ? 'active' : ''} 
+                        onClick={() => setActiveTab('wykresy')}
+                        title="Wykresy"
+                    >
+                        <BarChart4 size={20} />
+                    </div>
+                </div>
                 <div className={`overdue-box ${przedawnioneCount > 0 ? 'active' : ''}`}>
                     <span>Przedawnione</span>
                     <span className="overdue-count">{przedawnioneCount}</span>
@@ -234,58 +251,40 @@ function App() {
                             dzialy={selectedDzialy}
                             numerSearch={numerSearch}
                             kontrahentSearch={kontrahentSearch}
+                            uwagiSearch={uwagiSearch}
                             pokazPrzedawnione={pokazPrzedawnione}
                         />
                     </div>
                 )}
                 {activeTab === 'wykresy' && (
-  <div className="charts-page-container">
-
-    {/* --- KONTENER Z LISTĄ ROZWIJANĄ --- */}
-    <div className="chart-selector-wrapper">
-      <label htmlFor="chart-select">Wybierz wykres:</label>
-      <select 
-        id="chart-select"
-        value={selectedChart} 
-        onChange={(e) => setSelectedChart(e.target.value)}
-      >
-        <option value="status">Wykres Statusów (Kołowy)</option>
-        <option value="kompetencje">Wykres Kompetencji</option>
-        <option value="przedmioty">Wykres Przedmiotów</option>
-        <option value="program-serwisant">Program - Serwisant</option>
-        <option value="roczny">Wykres Roczny</option>
-        <option value="workload">Obciążenie Pracą</option>
-      </select>
-    </div>
-
-    {/* --- KONTENER Z WYKRESEM --- */}
-    <div className="chart-display-area">
-      {selectedChart === 'status' && <StatusPieChart startDate={startDate} 
-      endDate={endDate} 
-      dzialy={selectedDzialy}/>}
-      {selectedChart === 'kompetencje' && <KompetencjeChart startDate={startDate} 
-      endDate={endDate} 
-      dzialy={selectedDzialy}/>}
-      {selectedChart === 'przedmioty' && <PrzedmiotyChart startDate={startDate} 
-      endDate={endDate} 
-      dzialy={selectedDzialy}/>}
-      {selectedChart === 'roczny' && <RocznyWykres startDate={startDate} 
-      endDate={endDate} 
-      dzialy={selectedDzialy}/>}
-      {selectedChart === 'workload' && <WorkloadChart startDate={startDate} 
-      endDate={endDate} 
-      dzialy={selectedDzialy}/>}
-      {selectedChart === 'program-serwisant' && (
-    <ProgramSerwisantChart 
-      startDate={startDate} 
-      endDate={endDate} 
-      dzialy={selectedDzialy} 
-    />
-  )}
-    </div>
-
-  </div>
-)}
+                    <div className="charts-page-container">
+                        <div className="chart-selector-wrapper">
+                            <label htmlFor="chart-select">Wybierz wykres:</label>
+                            <select 
+                                id="chart-select"
+                                value={selectedChart} 
+                                onChange={(e) => setSelectedChart(e.target.value)}
+                            >
+                                <option value="status">Wykres Statusów (Kołowy)</option>
+                                <option value="kompetencje">Wykres Kompetencji</option>
+                                <option value="przedmioty">Wykres Przedmiotów</option>
+                                <option value="program-serwisant">Program - Serwisant</option>
+                                <option value="roczny">Wykres Roczny</option>
+                                <option value="workload">Obciążenie Pracą - zadania</option>
+                                <option value="workload-sprawy">Obciążenie pracą - Sprawy</option>
+                            </select>
+                        </div>
+                        <div className="chart-display-area">
+                            {selectedChart === 'status' && <StatusPieChart startDate={startDate} endDate={endDate} dzialy={selectedDzialy}/>}
+                            {selectedChart === 'kompetencje' && <KompetencjeChart startDate={startDate} endDate={endDate} dzialy={selectedDzialy}/>}
+                            {selectedChart === 'przedmioty' && <PrzedmiotyChart startDate={startDate} endDate={endDate} dzialy={selectedDzialy}/>}
+                            {selectedChart === 'roczny' && <RocznyWykres startDate={startDate} endDate={endDate} dzialy={selectedDzialy}/>}
+                            {selectedChart === 'workload' && <WorkloadChart startDate={startDate} endDate={endDate} dzialy={selectedDzialy}/>}
+                            {selectedChart === 'program-serwisant' && <ProgramSerwisantChart startDate={startDate} endDate={endDate} dzialy={selectedDzialy} />}
+                            {selectedChart === 'workload-sprawy' && <WorkloadSprawyChart startDate={startDate} endDate={endDate} dzialy={selectedDzialy} />}
+                        </div>
+                    </div>
+                )}
             </main>
         </div>
     );

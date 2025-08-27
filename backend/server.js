@@ -38,70 +38,85 @@ app.get('/api/dzialy', async (req, res) => {
     }
 });
 
-// ZAKTUALIZOWANY ENDPOINT 2: Dodano pobieranie kolumny "kontakt"
+// OSTATECZNA WERSJA ENDPOINTU /api/sprawy
 app.get('/api/sprawy', async (req, res) => {
-    const { startDate, endDate, dzialy, searchTerm, kontrahentSearch, pokazPrzedawnione, page = 1, limit = 15 } = req.query;
+    const { startDate, endDate, dzialy, numerSearch, kontrahentSearch, pokazPrzedawnione, uwagiSearch, page = 1, limit = 15 } = req.query;
 
     try {
         const pool = await sql.connect(dbConfig);
         const request = pool.request();
         
         const offset = (page - 1) * limit;
+        const conditions = [];
 
-        let baseQuery = `
-            FROM dbo.bokser_sprawy AS s
-            LEFT JOIN dbo.bokser_kontrahenci AS k ON s.akronim = k.akronim
-        `;
-        let filterConditions = ' WHERE 1=1 ';
-
+        // KROK 1: Zawsze dodajemy filtr działu, jeśli jest
         if (dzialy) {
             const dzialyArray = dzialy.split(',');
             if (dzialyArray.length > 0) {
                 const dzialyParams = dzialyArray.map((d, i) => `@dzial${i}`);
-                filterConditions += ` AND s.dzial IN (${dzialyParams.join(',')})`;
+                conditions.push(`s.dzial IN (${dzialyParams.join(',')})`);
                 dzialyArray.forEach((d, i) => { request.input(`dzial${i}`, sql.NVarChar, d); });
             }
         }
 
-        if (pokazPrzedawnione === 'true') {
-            filterConditions += ` AND s.data_plan < GETDATE() AND s.status IN (1, 2)`;
-        } else if (kontrahentSearch) {
-            filterConditions += ` AND k.miasto LIKE @kontrahentSearch`;
-            request.input('kontrahentSearch', sql.NVarChar, `%${kontrahentSearch}%`);
-        } else {
-            if (startDate && endDate) {
-                filterConditions += ` AND s.data_plan >= @startDate AND s.data_plan < DATEADD(day, 1, @endDate)`;
-                request.input('startDate', sql.Date, startDate);
-                request.input('endDate', sql.Date, endDate);
-            } else if (startDate) {
-                filterConditions += ` AND s.data_plan >= @startDate`;
-                request.input('startDate', sql.Date, startDate);
-            }
+        // KROK 2: Sprawdzamy, czy użyto któregoś z filtrów specjalnych
+        let specialFilterApplied = true;
 
-            if (searchTerm) {
-                filterConditions += ` AND s.nr_sprawy LIKE @searchTerm`;
-                request.input('searchTerm', sql.NVarChar, `%${searchTerm}%`);
-            }
+        if (pokazPrzedawnione === 'true') {
+            conditions.push(`s.data_plan < GETDATE() AND s.status IN (1, 2)`);
+        } else if (kontrahentSearch) {
+            conditions.push(`k.miasto LIKE @kontrahentSearch`);
+            request.input('kontrahentSearch', sql.NVarChar, `%${kontrahentSearch}%`);
+        } else if (numerSearch) {
+            conditions.push(`s.nr_sprawy LIKE @numerSearch`);
+            request.input('numerSearch', sql.NVarChar, `%${numerSearch}%`);
+        } else if (uwagiSearch) {
+            conditions.push(`z.uwagi LIKE @uwagiSearch`);
+            request.input('uwagiSearch', sql.NVarChar, `%${uwagiSearch}%`);
+        } else {
+            specialFilterApplied = false;
         }
+
+        // KROK 3: Jeśli NIE użyto filtra specjalnego, dodajemy filtr daty
+        if (!specialFilterApplied && startDate && endDate) {
+            conditions.push(`s.data_plan >= @startDate AND s.data_plan < DATEADD(day, 1, @endDate)`);
+            request.input('startDate', sql.Date, startDate);
+            request.input('endDate', sql.Date, endDate);
+        }
+
+        const baseQuery = `
+            FROM dbo.bokser_sprawy AS s
+            LEFT JOIN dbo.bokser_kontrahenci AS k ON s.akronim = k.akronim
+            LEFT JOIN dbo.bokser_zadania AS z ON s.nr_sprawy = z.nr_spr
+        `;
+        const filterConditions = `WHERE ${conditions.join(' AND ')}`;
         
-        const countQuery = `SELECT COUNT(*) AS total ${baseQuery} ${filterConditions}`;
+        const countQuery = `SELECT COUNT(DISTINCT s.nr_sprawy) AS total ${baseQuery} ${filterConditions}`;
         const dataQuery = `
-            SELECT
+            SELECT DISTINCT
                 s.nr_sprawy,
-                (SELECT STUFF((SELECT DISTINCT CHAR(10) + z.przedmiot FROM dbo.bokser_zadania z WHERE z.nr_spr = s.nr_sprawy AND z.przedmiot IS NOT NULL FOR XML PATH('')), 1, 1, '')) AS lista_przedmiotow,
+                (SELECT STUFF((SELECT DISTINCT CHAR(10) + z_inner.przedmiot FROM dbo.bokser_zadania z_inner WHERE z_inner.nr_spr = s.nr_sprawy AND z_inner.przedmiot IS NOT NULL FOR XML PATH('')), 1, 1, '')) AS lista_przedmiotow,
                 k.nazwa AS nazwa_kontrahenta,
                 s.akronim AS kontrahent_akronim,
-                s.kontakt, -- DODANO NOWĄ KOLUMNĘ
+                s.kontakt,
                 s.data_plan,
                 s.godz_plan,
                 s.data_zak,
-                CASE s.status WHEN 1 THEN 'Otwarta' WHEN 2 THEN 'W trakcie realizacji' WHEN 3 THEN 'Zakończona' ELSE 'Nieznany' END AS status_opis
+                CASE s.status WHEN 1 THEN 'Otwarta' WHEN 2 THEN 'W trakcie realizacji' WHEN 3 THEN 'Zakończona' ELSE 'Nieznany' END AS status_opis,
+                CASE s.status WHEN 1 THEN 'otwarta' WHEN 2 THEN 'w-trakcie-realizacji' WHEN 3 THEN 'zakończona' ELSE 'nieznany' END AS status_css
             ${baseQuery}
             ${filterConditions}
-            ORDER BY s.data_plan DESC
+            ORDER BY s.data_plan DESC, s.godz_plan DESC
             OFFSET ${offset} ROWS FETCH NEXT ${parseInt(limit)} ROWS ONLY;
         `;
         
+        // --- LOGOWANIE DO KONSOLI ---
+        console.log("--- DEBUG: Pełne zapytanie SQL ---");
+        console.log(dataQuery);
+        console.log("--- DEBUG: Parametry zapytania ---");
+        console.log(request.parameters);
+        // --- KONIEC LOGOWANIA ---
+
         const countResult = await request.query(countQuery);
         const dataResult = await request.query(dataQuery);
 
@@ -622,6 +637,49 @@ app.get('/api/statystyki/program-serwisant', async (req, res) => {
         res.json(result.recordset);
     } catch (err) {
         console.error("Błąd serwera przy pobieraniu statystyk program-serwisant:", err);
+        res.status(500).send("Błąd podczas pobierania statystyk");
+    }
+});
+// OSTATECZNA WERSJA ENDPOINTU: Obciążenie pracą na podstawie zamkniętych SPRAW
+app.get('/api/statystyki/obciazenie-sprawy', async (req, res) => {
+    const { startDate, endDate, dzialy } = req.query;
+    try {
+        const pool = await sql.connect(dbConfig);
+        const request = pool.request();
+
+        let query = `
+            SELECT 
+                z.wykonawca AS serwisant, 
+                COUNT(DISTINCT s.nr_sprawy) AS liczba_spraw
+            FROM dbo.bokser_zadania AS z
+            INNER JOIN dbo.bokser_sprawy AS s ON z.nr_spr = s.nr_sprawy
+            WHERE 
+                s.status = 3 -- Bierzemy pod uwagę tylko ZAMKNIĘTE sprawy
+                AND z.wykonawca IS NOT NULL AND z.wykonawca <> ''
+        `;
+
+        if (startDate && endDate) {
+            // Filtrujemy po DACIE ZAMKNIĘCIA SPRAWY
+            query += ` AND s.data_zak >= @startDate AND s.data_zak < DATEADD(day, 1, @endDate)`;
+            request.input('startDate', sql.Date, startDate);
+            request.input('endDate', sql.Date, endDate);
+        }
+
+        if (dzialy) {
+            const dzialyArray = dzialy.split(',');
+            if (dzialyArray.length > 0) {
+                const dzialyParams = dzialyArray.map((d, i) => `@dzial${i}`);
+                query += ` AND s.dzial IN (${dzialyParams.join(',')})`;
+                dzialyArray.forEach((d, i) => { request.input(`dzial${i}`, sql.NVarChar, d); });
+            }
+        }
+
+        query += ` GROUP BY z.wykonawca ORDER BY liczba_spraw DESC;`;
+
+        const result = await request.query(query);
+        res.json(result.recordset);
+    } catch (err) {
+        console.error("Błąd serwera przy pobieraniu statystyk obciążenia sprawami:", err);
         res.status(500).send("Błąd podczas pobierania statystyk");
     }
 });

@@ -4,7 +4,7 @@ import SprawaWiersz from './SprawaWiersz';
 import { ReceiptText } from 'lucide-react';
 import ContractorDetailsModal from './ContractorDetailsModal';
 
-function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearch, pokazPrzedawnione }) {
+function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearch, pokazPrzedawnione, uwagiSearch }) {
     const [sprawy, setSprawy] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
@@ -38,11 +38,10 @@ function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearc
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [startDate, endDate, dzialy, numerSearch, kontrahentSearch, pokazPrzedawnione]);
+    }, [startDate, endDate, dzialy, numerSearch, kontrahentSearch, pokazPrzedawnione, uwagiSearch]);
 
     useEffect(() => {
-        // ... (Twój kod do pobierania danych pozostaje bez zmian)
-        if (!pokazPrzedawnione && !kontrahentSearch && (!startDate || !endDate || !dzialy || dzialy.length === 0)) {
+        if (!pokazPrzedawnione && !kontrahentSearch && !uwagiSearch && !numerSearch && (!startDate || !endDate || !dzialy || dzialy.length === 0)) {
             setSprawy([]);
             setTotalPages(0);
             setTotalRecords(0);
@@ -50,20 +49,40 @@ function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearc
         }
 
         const params = new URLSearchParams();
-        if (pokazPrzedawnione) {
-            params.append('pokazPrzedawnione', true);
-        } else if (kontrahentSearch) {
-            params.append('kontrahentSearch', kontrahentSearch);
-        } else {
-            params.append('startDate', startDate);
-            params.append('endDate', endDate);
-            params.append('dzialy', dzialy.join(','));
-            if (numerSearch) {
-                params.append('searchTerm', numerSearch);
-            }
-        }
-        params.append('page', currentPage);
-        params.append('limit', recordsPerPage);
+
+        if (uwagiSearch) {
+    params.append('uwagiSearch', uwagiSearch);
+    // Dołączamy też działy, jeśli są wybrane
+    if (dzialy && dzialy.length > 0) {
+        params.append('dzialy', dzialy.join(','));
+    }
+} else if (pokazPrzedawnione) {
+    params.append('pokazPrzedawnione', true);
+    if (dzialy && dzialy.length > 0) {
+        params.append('dzialy', dzialy.join(','));
+    }
+} else if (kontrahentSearch) {
+    params.append('kontrahentSearch', kontrahentSearch);
+    if (dzialy && dzialy.length > 0) {
+        params.append('dzialy', dzialy.join(','));
+    }
+} else if (numerSearch) {
+    params.append('numerSearch', numerSearch);
+    if (dzialy && dzialy.length > 0) {
+        params.append('dzialy', dzialy.join(','));
+    }
+} else {
+    // Domyślne filtry
+    params.append('startDate', startDate);
+    params.append('endDate', endDate);
+    if (dzialy && dzialy.length > 0) {
+        params.append('dzialy', dzialy.join(','));
+    }
+}
+
+// Parametry stronicowania dodajemy zawsze na końcu
+params.append('page', currentPage);
+params.append('limit', recordsPerPage);
 
         axios.get(`http://localhost:5001/api/sprawy`, { params })
             .then(response => {
@@ -76,10 +95,9 @@ function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearc
                 console.error("Błąd pobierania listy spraw!", err);
                 setError("Nie udało się pobrać listy spraw.");
             });
-    }, [startDate, endDate, dzialy, currentPage, numerSearch, kontrahentSearch, pokazPrzedawnione]);
+    }, [startDate, endDate, dzialy, currentPage, numerSearch, kontrahentSearch, pokazPrzedawnione, uwagiSearch]);
     
     const sortedSprawy = useMemo(() => {
-        // ... (Twoja logika sortowania, w tym ta dla daty+godziny, pozostaje bez zmian)
         let sortableItems = [...sprawy];
         if (sortConfig !== null) {
             sortableItems.sort((a, b) => {
@@ -126,7 +144,6 @@ function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearc
 
     if (error) return <div className="table-container"><p style={{color: 'red'}}>{error}</p></div>;
 
-    // === POCZĄTEK POPRAWIONEJ STRUKTURY JSX ===
     return (
         <>
             <div className="table-container">
@@ -144,23 +161,20 @@ function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearc
                 {(sprawy.length === 0 && !error) && <p style={{padding: '20px', textAlign: 'center'}}>Brak spraw do wyświetlenia dla wybranych filtrów.</p>}
                 {sprawy.length > 0 && (
                     <table className="sprawy-table">
-                        {/* Nagłówek jest tutaj, w SprawyTabela, gdzie ma dostęp do requestSort */}
                         <thead>
                             <tr>
-                                 
                                 <th>Numer Sprawy</th>
-                                <th>Przedmioty Zadań</th>
-                                <th>Kontrahent</th>
-                                <th>Kontakt</th>
-                                <th onClick={() => requestSort('data_plan')} className="sortable">
-                                    Data Planowana {sortConfig.key === 'data_plan' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : null}
-                                </th>
-                                <th onClick={() => requestSort('status_opis')} className="sortable">
-                                    Status {sortConfig.key === 'status_opis' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : null}
-                                </th>
+        <th>Przedmioty Zadań</th>
+        <th>Kontrahent</th>
+        <th>Kontakt</th>
+        <th onClick={() => requestSort('data_plan')} className="sortable">
+            Data Planowana {sortConfig.key === 'data_plan' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : null}
+        </th>
+        <th onClick={() => requestSort('status_opis')} className="sortable">
+            Status {sortConfig.key === 'status_opis' ? (sortConfig.direction === 'ascending' ? '▲' : '▼') : null}
+        </th>
                             </tr>
                         </thead>
-                        {/* Ciało tabeli mapuje dane i przekazuje je do komponentu SprawaWiersz */}
                         <tbody>
                             {sortedSprawy.map(sprawa => (
                                 <SprawaWiersz 
@@ -184,7 +198,6 @@ function SprawyTabela({ startDate, endDate, dzialy, numerSearch, kontrahentSearc
             )}
         </>
     );
-    // === KONIEC POPRAWIONEJ STRUKTURY JSX ===
 }
 
 export default SprawyTabela;
