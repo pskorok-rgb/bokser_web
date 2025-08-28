@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; 
 import axios from 'axios';
 import './App.css';
 import StatusPieChart from './StatusPieChart';
@@ -13,6 +13,7 @@ import { ListTodo, BarChart4 } from 'lucide-react';
 import ProgramSerwisantChart from './ProgramSerwisantChart';
 import WorkloadSprawyChart from './WorkloadSprawyChart';
 import ProgramWersjeChart from './ProgramWersjeChart';
+import logo from './logo.svg';
 
 const formatDate = (date) => {
     const d = new Date(date);
@@ -42,7 +43,43 @@ function App() {
     const [numerInput, setNumerInput] = useState('');
     const [kontrahentInput, setKontrahentInput] = useState('');
     const [uwagiInput, setUwagiInput] = useState('');
+    
+    // Nowy stan do liczenia kliknięć w logo
+    const [logoClickCount, setLogoClickCount] = useState(0);
+    // Ref do przechowywania ID timera, który będzie resetował licznik
+    const clickTimeoutRef = useRef(null);
 
+    // Funkcja czyszcząca timer, gdy komponent jest odmontowywany
+    useEffect(() => {
+        // Zwracamy funkcję czyszczącą
+        return () => {
+            if (clickTimeoutRef.current) {
+                clearTimeout(clickTimeoutRef.current);
+            }
+        };
+    }, []); // Pusta tablica oznacza, że ten efekt uruchomi się tylko raz
+
+    // Funkcja obsługująca kliknięcie w logo
+    const handleLogoClick = () => {
+        // Czyścimy poprzedni timer, jeśli istnieje
+        if (clickTimeoutRef.current) {
+            clearTimeout(clickTimeoutRef.current);
+        }
+
+        const newCount = logoClickCount + 1;
+        setLogoClickCount(newCount);
+
+        if (newCount === 5) {
+            // Po 5 kliknięciach aktywujemy animację i resetujemy licznik
+            setShowAnimation(true);
+            setLogoClickCount(0);
+        } else {
+            // Ustawiamy nowy timer, który zresetuje licznik po 1.5 sekundy bezczynności
+            clickTimeoutRef.current = setTimeout(() => {
+                setLogoClickCount(0);
+            }, 1500);
+        }
+    };
     // Pozostałe stany
     const [showAnimation, setShowAnimation] = useState(false);
     const [startDate, setStartDate] = useState(getInitialDates().startDate);
@@ -143,13 +180,14 @@ function App() {
     return (
         <div className="App">
             <header className="App-header">
-                <button 
-                    className="main-header" 
-                    onClick={() => setShowAnimation(!showAnimation)}
-                >
-                BOKser_web
-                </button>
+                
                 {showAnimation && <SpermAnimation />}
+                <img 
+                    src={logo} 
+                    className="app-logo animate-on-load" /* DODANA KLASA */
+                    alt="Logo Bokserweb" 
+                    onClick={handleLogoClick} 
+                />
             </header>
             
             <div className="filters-panel">

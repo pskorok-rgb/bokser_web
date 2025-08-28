@@ -5,14 +5,14 @@
 
 /* Nagłówek */
 .App-header {
-  background-color: #f0f0f0;  /* Nasze szare tło */
-  color: black;               /* Ustawiamy czarny kolor czcionki dla tej sekcji */
+  background-color: #bcbcbc; /* NOWY KOLOR TŁA */
+  color: black;
   text-align: left;
   position: relative;
-  min-height: 100px;           /* Minimalna wysokość, którą możesz regulować */
+  min-height: 100px;
   display: flex;
   align-items: center;
-  padding: 0 30px;            /* Odstępy tylko po bokach */
+  padding: 0 30px;
 }
 
 /* Panel z filtrami */
@@ -677,4 +677,23 @@
 .modal-scrollable-content {
   max-height: 400px; /* Maksymalna wysokość listy */
   overflow-y: auto;  /* Dodaje scroll, gdy lista jest dłuższa */
+}
+.app-logo {
+  height: 20px; /* Możesz dostosować tę wartość do swoich potrzeb */
+  margin-left: auto;
+}
+/* Animacja wjazdu logo */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%); /* Zaczyna poza ekranem po prawej */
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0); /* Kończy w pozycji domyślnej */
+    opacity: 1;
+  }
+}
+
+.app-logo.animate-on-load {
+  animation: slideInFromRight 1s ease-out forwards; /* 1s - czas trwania, ease-out - płynne zakończenie, forwards - utrzymuje końcowy stan */
 }

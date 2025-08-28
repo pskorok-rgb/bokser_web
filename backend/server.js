@@ -511,7 +511,7 @@ app.get('/api/sprawy/przedawnione-count', async (req, res) => {
         const result = await request.query(`
             SELECT COUNT(*) as count 
             FROM dbo.bokser_sprawy 
-            WHERE data_plan < GETDATE() 
+            WHERE data_plan < CAST(CAST(GETDATE() AS DATE) AS DATETIME) 
             AND status IN (1, 2) 
             AND dzial <> 'MARAT'
         `);
